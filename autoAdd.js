@@ -17,22 +17,29 @@ forStrictNullCheckEligibleFiles(vscodeRoot, () => { }).then(async (files) => {
 
 function tryAutoAddStrictNulls(file) {
     return new Promise(resolve => {
-        console.log(`Trying to auto add '${file}'`);
+        const relativeFilePath = path.relative(srcRoot, file);
+        console.log(`Trying to auto add '${relativeFilePath}'`);
 
         const tsconfigPath = path.join(srcRoot, config.targetTsconfig);
-        const initialConfig = JSON.parse(fs.readFileSync(tsconfigPath).toString());
+        const originalConifg = JSON.parse(fs.readFileSync(tsconfigPath).toString());
 
-        const newConfig = Object.assign({}, initialConfig);
-        newConfig.include = Array.from(initialConfig.include)
-        newConfig.include.push('./' + path.relative(srcRoot, file));
-        fs.writeFileSync(tsconfigPath, JSON.stringify(newConfig, null, '\t'));
+        // Config on accept
+        const newConfig = Object.assign({}, originalConifg);
+        newConfig.include = originalConifg.include.concat('./' + relativeFilePath).sort();
 
-        child_process.exec(`tsc -p ${tsconfigPath}`, (error, stdout, stderr) => {
+        // Config containing just file to test
+        const testConfig = Object.assign({}, originalConifg);
+        testConfig.include = ['./' + relativeFilePath]
+
+        fs.writeFileSync(tsconfigPath, JSON.stringify(testConfig, null, '\t'));
+
+        child_process.exec(`tsc -p ${tsconfigPath}`, (error, _stdout, _stderr) => {
             if (error) {
-                console.log(`Reverting`);
-                fs.writeFileSync(tsconfigPath, JSON.stringify(initialConfig, null, '\t'));
+                console.log(`💥`);
+                fs.writeFileSync(tsconfigPath, JSON.stringify(originalConifg, null, '\t'));
             } else {
-                console.log(`Accepting`);
+                console.log(`👍`);
+                fs.writeFileSync(tsconfigPath, JSON.stringify(newConfig, null, '\t'));
             }
             resolve();
         });
