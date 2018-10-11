@@ -1,8 +1,9 @@
 // @ts-check
 const path = require('path');
-const dependencyTree = require('dependency-tree');
-const glob = require('glob')
-const config = require('./config')
+const ts = require('typescript');
+const glob = require('glob');
+const config = require('./config');
+const fs = require('fs');
 
 
 module.exports.forStrictNullCheckEligibleFiles = (vscodeRoot, forEach) => {
@@ -24,11 +25,23 @@ module.exports.forStrictNullCheckEligibleFiles = (vscodeRoot, forEach) => {
                 .filter(file => !file.endsWith('.d.ts') && !file.endsWith('.test.ts'))
                 .filter(file => !checkedFiles.has(file))
                 .filter(file => {
-                    const nonCheckedImports = dependencyTree.toList({
-                        filename: file,
-                        directory: srcRoot,
-                        visited: visited
-                    })
+                    const fileInfo = ts.preProcessFile(fs.readFileSync(file).toString());
+                    const allImports = fileInfo.importedFiles
+                        .map(importedFile => importedFile.fileName)
+                        .filter(fileName => !/^vs\/css!/.test(fileName))
+                        .map(fileName => fileName + '.ts')
+                        .map(fileName => {
+                            if (/(^\.\/)|(^\.\.\/)/.test(fileName)) {
+                                return path.join(path.dirname(file), fileName);
+                            }
+                            if (/^vs/.test(fileName)) {
+                                return path.join(srcRoot, fileName);
+                            }
+                            return fileName;
+                        });
+
+                    const nonCheckedImports = allImports
+                        .filter(x => /\//.test(x)) // remove node modules
                         .filter(x => x !== file)
                         .filter(x => !checkedFiles.has(x));
 
