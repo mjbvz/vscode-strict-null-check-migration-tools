@@ -1,0 +1,17 @@
+{
+  "name": "vscode-strict-null-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Matt Bierner",
+  "license": "MIT",
+  "dependencies": {
+    "dependency-tree": "^6.2.1",
+    "glob": "^7.1.3"
+  }
+}
