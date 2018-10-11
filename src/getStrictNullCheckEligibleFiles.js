@@ -26,10 +26,10 @@ module.exports.forStrictNullCheckEligibleFiles = (vscodeRoot, forEach) => {
                 .filter(file => !checkedFiles.has(file))
                 .filter(file => {
                     const fileInfo = ts.preProcessFile(fs.readFileSync(file).toString());
-                    const allImports = fileInfo.importedFiles
+                    const allProjImports = fileInfo.importedFiles
                         .map(importedFile => importedFile.fileName)
-                        .filter(fileName => !/^vs\/css!/.test(fileName))
-                        .map(fileName => fileName + '.ts')
+                        .filter(fileName => !/^vs\/css!/.test(fileName)) // remove css imports
+                        .filter(x => /\//.test(x)) // remove node modules (the import must contain '/')
                         .map(fileName => {
                             if (/(^\.\/)|(^\.\.\/)/.test(fileName)) {
                                 return path.join(path.dirname(file), fileName);
@@ -38,10 +38,17 @@ module.exports.forStrictNullCheckEligibleFiles = (vscodeRoot, forEach) => {
                                 return path.join(srcRoot, fileName);
                             }
                             return fileName;
+                        }).map(fileName => {
+                            if (fs.existsSync(`${fileName}.ts`)) {
+                                return `${fileName}.ts`;
+                            }
+                            if (fs.existsSync(`${fileName}.d.ts`)) {
+                                return `${fileName}.d.ts`;
+                            }
+                            throw new Error(`Unresolved import ${fileName} in ${file}`);
                         });
 
-                    const nonCheckedImports = allImports
-                        .filter(x => /\//.test(x)) // remove node modules
+                    const nonCheckedImports = allProjImports
                         .filter(x => x !== file)
                         .filter(x => !checkedFiles.has(x));
 
