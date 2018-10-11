@@ -33,9 +33,9 @@ function tryAutoAddStrictNulls(file) {
 
         fs.writeFileSync(tsconfigPath, JSON.stringify(testConfig, null, '\t'));
 
-        child_process.exec(`tsc -p ${tsconfigPath}`, (error, _stdout, _stderr) => {
+        child_process.exec(`tsc -p ${tsconfigPath}`, (error, stdout) => {
             if (error) {
-                console.log(`💥`);
+                console.log(`💥 - ${stdout.match(/ error TS/gi).length}`);
                 fs.writeFileSync(tsconfigPath, JSON.stringify(originalConifg, null, '\t'));
             } else {
                 console.log(`👍`);
