@@ -22,16 +22,13 @@ function tryAutoAddStrictNulls(file) {
 
         const tsconfigPath = path.join(srcRoot, config.targetTsconfig);
         const originalConifg = JSON.parse(fs.readFileSync(tsconfigPath).toString());
+        originalConifg.include = Array.from(new Set(originalConifg.include.sort()));
 
         // Config on accept
         const newConfig = Object.assign({}, originalConifg);
-        newConfig.include = originalConifg.include.concat('./' + relativeFilePath).sort();
+        newConfig.include = Array.from(new Set(originalConifg.include.concat('./' + relativeFilePath).sort()));
 
-        // Config containing just file to test
-        const testConfig = Object.assign({}, originalConifg);
-        testConfig.include = ['./' + relativeFilePath]
-
-        fs.writeFileSync(tsconfigPath, JSON.stringify(testConfig, null, '\t'));
+        fs.writeFileSync(tsconfigPath, JSON.stringify(newConfig, null, '\t'));
 
         child_process.exec(`tsc -p ${tsconfigPath}`, (error, stdout) => {
             if (error) {
@@ -41,6 +38,7 @@ function tryAutoAddStrictNulls(file) {
                 console.log(`👍`);
                 fs.writeFileSync(tsconfigPath, JSON.stringify(newConfig, null, '\t'));
             }
+
             resolve();
         });
     });
