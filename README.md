@@ -21,11 +21,3 @@ Very simple script that tries to auto add any eligible file to the `tsconfig.str
 ```bash
 $ node autoAdd.js /path/to/vscode
 ```
-
-**mostDependedOn.js**
-
-Prints list of eligible files sorted by the number files that depend on them. Helps gauge which files are most valuable to move over.
-
-```bash
-$ node mostDependedOn.js /path/to/vscode
-```
