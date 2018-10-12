@@ -10,7 +10,7 @@ module.exports.forStrictNullCheckEligibleFiles = (vscodeRoot, forEach) => {
     const srcRoot = path.join(vscodeRoot, 'src');
 
     const checkedFiles = new Set(
-        require(path.join(srcRoot, config.targetTsconfig)).include
+        require(path.join(srcRoot, config.targetTsconfig)).files
             .map(include => path.join(srcRoot, include)));
 
     const visited = {};

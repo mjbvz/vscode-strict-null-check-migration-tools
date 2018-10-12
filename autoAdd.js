@@ -22,11 +22,11 @@ function tryAutoAddStrictNulls(file) {
 
         const tsconfigPath = path.join(srcRoot, config.targetTsconfig);
         const originalConifg = JSON.parse(fs.readFileSync(tsconfigPath).toString());
-        originalConifg.include = Array.from(new Set(originalConifg.include.sort()));
+        originalConifg.files = Array.from(new Set(originalConifg.files.sort()));
 
         // Config on accept
         const newConfig = Object.assign({}, originalConifg);
-        newConfig.include = Array.from(new Set(originalConifg.include.concat('./' + relativeFilePath).sort()));
+        newConfig.files = Array.from(new Set(originalConifg.files.concat('./' + relativeFilePath).sort()));
 
         fs.writeFileSync(tsconfigPath, JSON.stringify(newConfig, null, '\t'));
 
