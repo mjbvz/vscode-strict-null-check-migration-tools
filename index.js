@@ -34,5 +34,5 @@ forStrictNullCheckEligibleFiles(vscodeRoot, () => { }).then(async eligibleFiles 
 
 function toFormattedFilePath(file) {
     // return `"./${path.relative(srcRoot, file)}",`;
-    return `- [ ] './${path.relative(srcRoot, file)}'`;
+    return `- [ ] \`"./${path.relative(srcRoot, file)}"\``;
 }
