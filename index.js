@@ -27,7 +27,7 @@ forStrictNullCheckEligibleFiles(vscodeRoot, () => { }).then(async eligibleFiles 
 
     const sortedCounts = Array.from(dependedOnCount.entries()).sort((a, b) => b[1] - a[1]);
     for (const pair of sortedCounts) {
-        console.log(`${toFormattedFilePath(pair[0])} — Depended on by ${pair[1]} files`);
+        console.log(`${toFormattedFilePath(pair[0])} — Depended on by **${pair[1]}** files`);
     }
 });
 
