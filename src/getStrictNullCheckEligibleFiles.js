@@ -21,9 +21,8 @@ module.exports.forEachFileInSrc = forEachFileInSrc;
 module.exports.forStrictNullCheckEligibleFiles = async (vscodeRoot, forEach) => {
     const srcRoot = path.join(vscodeRoot, 'src');
 
-    const checkedFiles = new Set(
-        require(path.join(srcRoot, config.targetTsconfig)).files
-            .map(include => path.join(srcRoot, include)));
+    const tsconfig = require(path.join(srcRoot, config.targetTsconfig));
+    const checkedFiles = await getCheckedFiles(tsconfig, srcRoot);
 
     const files = await forEachFileInSrc(srcRoot);
     return files
@@ -43,4 +42,24 @@ module.exports.forStrictNullCheckEligibleFiles = async (vscodeRoot, forEach) => 
 
             return isEdge;
         });
+}
+
+async function getCheckedFiles(tsconfig, srcRoot) {
+    const set = new Set(tsconfig.files.map(include => path.join(srcRoot, include)));
+    const includes = tsconfig.include.map(include => {
+        return new Promise((resolve, reject) => {
+            glob(path.join(srcRoot, include), (err, files) => {
+                if (err) {
+                    return reject(err);
+                }
+
+                for (const file of files) {
+                    set.add(file);
+                }
+                resolve();
+            })
+        });
+    });
+    await Promise.all(includes);
+    return set;
 }
