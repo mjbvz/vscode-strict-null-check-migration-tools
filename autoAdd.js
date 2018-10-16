@@ -9,18 +9,23 @@ const { forStrictNullCheckEligibleFiles } = require('./src/getStrictNullCheckEli
 const vscodeRoot = path.join(process.cwd(), process.argv[2]);
 const srcRoot = path.join(vscodeRoot, 'src');
 
+const buildCompletePattern = /Found (\d+) errors?\. Watching for file changes\./gi;
+
 forStrictNullCheckEligibleFiles(vscodeRoot, () => { }).then(async (files) => {
+    const tsconfigPath = path.join(srcRoot, config.targetTsconfig);
+
+    const child = child_process.spawn('tsc', ['-p', tsconfigPath, '--watch']);
     for (const file of files) {
-        await tryAutoAddStrictNulls(file);
+        await tryAutoAddStrictNulls(child, tsconfigPath, file);
     }
+    child.kill();
 });
 
-function tryAutoAddStrictNulls(file) {
+function tryAutoAddStrictNulls(child, tsconfigPath, file) {
     return new Promise(resolve => {
         const relativeFilePath = path.relative(srcRoot, file);
         console.log(`Trying to auto add '${relativeFilePath}'`);
 
-        const tsconfigPath = path.join(srcRoot, config.targetTsconfig);
         const originalConifg = JSON.parse(fs.readFileSync(tsconfigPath).toString());
         originalConifg.files = Array.from(new Set(originalConifg.files.sort()));
 
@@ -30,16 +35,23 @@ function tryAutoAddStrictNulls(file) {
 
         fs.writeFileSync(tsconfigPath, JSON.stringify(newConfig, null, '\t'));
 
-        child_process.exec(`tsc -p ${tsconfigPath}`, (error, stdout) => {
-            if (error) {
-                console.log(`💥 - ${stdout.match(/ error TS/gi).length}`);
-                fs.writeFileSync(tsconfigPath, JSON.stringify(originalConifg, null, '\t'));
-            } else {
-                console.log(`👍`);
-                fs.writeFileSync(tsconfigPath, JSON.stringify(newConfig, null, '\t'));
+        const listener = (data) => {
+            const textOut = data.toString();
+            const match = buildCompletePattern.exec(textOut);
+            if (match) {
+                const errorCount = +match[1];
+                if (errorCount === 0) {
+                    console.log(`👍`);
+                    fs.writeFileSync(tsconfigPath, JSON.stringify(newConfig, null, '\t'));
+                }
+                else {
+                    console.log(`💥 - ${errorCount}`);
+                    fs.writeFileSync(tsconfigPath, JSON.stringify(originalConifg, null, '\t'));
+                }
+                resolve();
+                child.stdout.removeListener('data', listener);
             }
-
-            resolve();
-        });
+        };
+        child.stdout.on('data', listener);
     });
 }
