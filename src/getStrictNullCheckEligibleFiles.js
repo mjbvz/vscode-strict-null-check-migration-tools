@@ -28,6 +28,7 @@ module.exports.forStrictNullCheckEligibleFiles = async (vscodeRoot, forEach) => 
     const files = await forEachFileInSrc(srcRoot);
     return files
         .filter(file => !checkedFiles.has(file))
+        .filter(file => !config.skippedFiles.has(path.relative(srcRoot, file)))
         .filter(file => {
             const allProjImports = getImportsForFile(file, srcRoot);
 
@@ -39,6 +40,7 @@ module.exports.forStrictNullCheckEligibleFiles = async (vscodeRoot, forEach) => 
             if (isEdge) {
                 forEach(file);
             }
+
             return isEdge;
         });
 }
