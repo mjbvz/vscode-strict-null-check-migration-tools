@@ -24,22 +24,38 @@ module.exports.forStrictNullCheckEligibleFiles = async (vscodeRoot, forEach) => 
     const tsconfig = require(path.join(srcRoot, config.targetTsconfig));
     const checkedFiles = await getCheckedFiles(tsconfig, srcRoot);
 
+    const imports = new Map();
+    const getMemoizedImportsForFile = (file, srcRoot) => {
+        if (imports.has(file)) {
+            return imports.get(file);
+        }
+        const importList = getImportsForFile(file, srcRoot);
+        imports.set(file, importList);
+        return importList;
+    }
+
     const files = await forEachFileInSrc(srcRoot);
     return files
         .filter(file => !checkedFiles.has(file))
         .filter(file => !config.skippedFiles.has(path.relative(srcRoot, file)))
         .filter(file => {
-            const allProjImports = getImportsForFile(file, srcRoot);
+            const allProjImports = getMemoizedImportsForFile(file, srcRoot);
 
             const nonCheckedImports = allProjImports
                 .filter(x => x !== file)
-                .filter(x => !checkedFiles.has(x));
+                .filter(imp => {
+                    if (checkedFiles.has(imp)) {
+                        return false;
+                    }
+                    // Don't treat cycles as blocking
+                    const impImports = getMemoizedImportsForFile(imp, srcRoot);
+                    return impImports.filter(x => x !== file).filter(x => !checkedFiles.has(x)).length !== 0;
+                });
 
             const isEdge = nonCheckedImports.length === 0;
             if (isEdge) {
                 forEach(file);
             }
-
             return isEdge;
         });
 }
