@@ -21,6 +21,9 @@ module.exports.getImportsForFile = function getImportsForFile(file, srcRoot) {
             if (fs.existsSync(`${fileName}.ts`)) {
                 return `${fileName}.ts`;
             }
+            if (fs.existsSync(`${fileName}.js`)) {
+                return `${fileName}.js`;
+            }
             if (fs.existsSync(`${fileName}.d.ts`)) {
                 return `${fileName}.d.ts`;
             }
