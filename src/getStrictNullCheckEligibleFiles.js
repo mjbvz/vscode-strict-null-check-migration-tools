@@ -4,21 +4,31 @@ const { getImportsForFile } = require('./tsHelper');
 const glob = require('glob');
 const config = require('./config');
 
-const forEachFileInSrc = (srcRoot) => {
+/**
+ * @param {string} srcRoot
+ * @param {{ includeTests: boolean }} [options]
+ */
+const forEachFileInSrc = (srcRoot, options) => {
     return new Promise((resolve, reject) => {
         glob(`${srcRoot}/vs/**/*.ts`, (err, files) => {
             if (err) {
                 return reject(err);
             }
 
-            return resolve(files.filter(file => !file.endsWith('.d.ts') && !file.endsWith('.test.ts')));
+            return resolve(files.filter(file =>
+                !file.endsWith('.d.ts')
+                && (options && options.includeTests ? true : !file.endsWith('.test.ts'))));
         })
     });
 };
 module.exports.forEachFileInSrc = forEachFileInSrc;
 
-
-module.exports.forStrictNullCheckEligibleFiles = async (vscodeRoot, forEach) => {
+/**
+ * @param {string} vscodeRoot
+ * @param {(file: string) => void} forEach
+ * @param {{ includeTests: boolean }} [options]
+ */
+module.exports.forStrictNullCheckEligibleFiles = async (vscodeRoot, forEach, options) => {
     const srcRoot = path.join(vscodeRoot, 'src');
 
     const tsconfig = require(path.join(srcRoot, config.targetTsconfig));
@@ -34,7 +44,7 @@ module.exports.forStrictNullCheckEligibleFiles = async (vscodeRoot, forEach) => 
         return importList;
     }
 
-    const files = await forEachFileInSrc(srcRoot);
+    const files = await forEachFileInSrc(srcRoot, options);
     return files
         .filter(file => !checkedFiles.has(file))
         .filter(file => !config.skippedFiles.has(path.relative(srcRoot, file)))
